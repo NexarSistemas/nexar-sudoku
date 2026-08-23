@@ -1,6 +1,6 @@
 # Nexar Sudoku
 
-Version actual: 0.1.0
+Version actual: 0.1.1
 
 Nexar Sudoku es un juego web de Nexar Play desarrollado con HTML, CSS y JavaScript puro. Permite jugar partidas de Sudoku con tableros generados aleatoriamente, niveles de dificultad y registro local de tiempos.
 
