@@ -18,7 +18,7 @@ let currentSolution = [];
 let fixedCells = new Set();
 let timerInterval = null;
 let startedAt = 0;
-let elapsedBeforeStart = 0;
+let elapsedBeforeStartMs = 0;
 let gameState = GAME_STATES.ready;
 
 function shuffled(values) {
@@ -158,9 +158,13 @@ function formatTime(totalSeconds) {
     return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
+function getElapsedMilliseconds() {
+    if (!startedAt) return elapsedBeforeStartMs;
+    return elapsedBeforeStartMs + Date.now() - startedAt;
+}
+
 function getElapsedSeconds() {
-    if (!startedAt) return elapsedBeforeStart;
-    return elapsedBeforeStart + Math.floor((Date.now() - startedAt) / 1000);
+    return Math.floor(getElapsedMilliseconds() / 1000);
 }
 
 function renderTimer() {
@@ -181,7 +185,7 @@ function stopTimer() {
 
 function resetTimer() {
     stopTimer();
-    elapsedBeforeStart = 0;
+    elapsedBeforeStartMs = 0;
     startedAt = gameState === GAME_STATES.running ? Date.now() : 0;
     renderTimer();
     if (gameState === GAME_STATES.running) {
@@ -235,7 +239,7 @@ function buildFixedCells() {
 function startNewGame() {
     clearMessage();
     stopTimer();
-    elapsedBeforeStart = 0;
+    elapsedBeforeStartMs = 0;
     startedAt = 0;
     setGameState(GAME_STATES.ready);
     currentSolution = generateSolvedBoard();
@@ -364,8 +368,9 @@ function checkSolution() {
         return;
     }
 
-    const elapsed = getElapsedSeconds();
-    elapsedBeforeStart = elapsed;
+    const elapsedMilliseconds = getElapsedMilliseconds();
+    const elapsed = Math.floor(elapsedMilliseconds / 1000);
+    elapsedBeforeStartMs = elapsedMilliseconds;
     startedAt = 0;
     stopTimer();
     setGameState(GAME_STATES.finished);
@@ -395,7 +400,7 @@ function startGameClock() {
 
 function pauseGame() {
     if (gameState !== GAME_STATES.running) return;
-    elapsedBeforeStart = getElapsedSeconds();
+    elapsedBeforeStartMs = getElapsedMilliseconds();
     startedAt = 0;
     stopTimer();
     setGameState(GAME_STATES.paused);
