@@ -46,6 +46,61 @@ function generateSolvedBoard() {
     return rows.map(row => cols.map(col => nums[pattern(row, col)]));
 }
 
+function isValidBoardShape(board) {
+    return Array.isArray(board) &&
+        board.length === 9 &&
+        board.every(row => Array.isArray(row) && row.length === 9);
+}
+
+function hasNoRepeatedNumbers(values) {
+    const seen = new Set();
+    for (const value of values) {
+        if (value === 0) continue;
+        if (!Number.isInteger(value) || value < 1 || value > 9 || seen.has(value)) return false;
+        seen.add(value);
+    }
+    return true;
+}
+
+function getBoxValues(board, boxRow, boxCol) {
+    const values = [];
+    for (let row = boxRow; row < boxRow + 3; row++) {
+        for (let col = boxCol; col < boxCol + 3; col++) {
+            values.push(board[row][col]);
+        }
+    }
+    return values;
+}
+
+function isBoardStateValid(board) {
+    if (!isValidBoardShape(board)) return false;
+
+    for (let index = 0; index < 9; index++) {
+        const row = board[index];
+        const col = board.map(currentRow => currentRow[index]);
+        if (!hasNoRepeatedNumbers(row) || !hasNoRepeatedNumbers(col)) return false;
+    }
+
+    for (let row = 0; row < 9; row += 3) {
+        for (let col = 0; col < 9; col += 3) {
+            if (!hasNoRepeatedNumbers(getBoxValues(board, row, col))) return false;
+        }
+    }
+    return true;
+}
+
+function isSolvedBoardValid(board) {
+    return isBoardStateValid(board) && board.every(row => row.every(value => value !== 0));
+}
+
+function cloneBoard(board) {
+    return board.map(row => [...row]);
+}
+
+function getClueCount(board) {
+    return board.flat().filter(value => value !== 0).length;
+}
+
 function isValidPlacement(board, row, col, num) {
     for (let i = 0; i < 9; i++) {
         if (board[row][i] === num || board[i][col] === num) return false;
@@ -86,7 +141,9 @@ function findBestEmptyCell(board) {
     return best ? { ...best, candidates: bestCandidates } : null;
 }
 
-function countSolutions(board, limit = 2) {
+function countSolutions(board, limit = 2, validateInitial = true) {
+    if (validateInitial && !isBoardStateValid(board)) return 0;
+
     const cell = findBestEmptyCell(board);
     if (!cell) return 1;
     if (cell.candidates.length === 0) return 0;
@@ -94,7 +151,7 @@ function countSolutions(board, limit = 2) {
     let count = 0;
     for (const num of cell.candidates) {
         board[cell.row][cell.col] = num;
-        count += countSolutions(board, limit - count);
+        count += countSolutions(board, limit - count, false);
         board[cell.row][cell.col] = 0;
         if (count >= limit) return count;
     }
@@ -121,6 +178,35 @@ function createPuzzle(solution, targetClues) {
         }
     }
     return puzzle;
+}
+
+function isPuzzleValidForSolution(puzzle, solution, targetClues) {
+    if (!isSolvedBoardValid(solution) || !isBoardStateValid(puzzle)) return false;
+    if (getClueCount(puzzle) !== targetClues) return false;
+
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            if (puzzle[row][col] !== 0 && puzzle[row][col] !== solution[row][col]) return false;
+        }
+    }
+
+    return countSolutions(cloneBoard(puzzle), 2) === 1;
+}
+
+function generateValidGame(targetClues) {
+    const maxAttempts = 100;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const solution = generateSolvedBoard();
+        if (!isSolvedBoardValid(solution)) continue;
+
+        const puzzle = createPuzzle(solution, targetClues);
+        if (isPuzzleValidForSolution(puzzle, solution, targetClues)) {
+            return { solution, puzzle };
+        }
+    }
+
+    throw new Error("No se pudo generar un tablero de Sudoku válido.");
 }
 
 function getStats() {
@@ -242,8 +328,9 @@ function startNewGame() {
     elapsedBeforeStartMs = 0;
     startedAt = 0;
     setGameState(GAME_STATES.ready);
-    currentSolution = generateSolvedBoard();
-    currentPuzzle = createPuzzle(currentSolution, DIFFICULTIES[currentDifficulty].clues);
+    const generatedGame = generateValidGame(DIFFICULTIES[currentDifficulty].clues);
+    currentSolution = generatedGame.solution;
+    currentPuzzle = generatedGame.puzzle;
     buildFixedCells();
     renderBoard();
     updateDifficultyLabel();
