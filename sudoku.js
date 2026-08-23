@@ -5,6 +5,12 @@ const DIFFICULTIES = {
 };
 
 const STORAGE_KEY = "nexar-sudoku-stats-v1";
+const GAME_STATES = {
+    ready: "ready",
+    running: "running",
+    paused: "paused",
+    finished: "finished"
+};
 
 let currentDifficulty = "easy";
 let currentPuzzle = [];
@@ -13,7 +19,7 @@ let fixedCells = new Set();
 let timerInterval = null;
 let startedAt = 0;
 let elapsedBeforeStart = 0;
-let gameFinished = false;
+let gameState = GAME_STATES.ready;
 
 function shuffled(values) {
     const result = [...values];
@@ -163,9 +169,7 @@ function renderTimer() {
 
 function startTimer() {
     stopTimer();
-    elapsedBeforeStart = 0;
     startedAt = Date.now();
-    gameFinished = false;
     renderTimer();
     timerInterval = window.setInterval(renderTimer, 500);
 }
@@ -178,10 +182,11 @@ function stopTimer() {
 function resetTimer() {
     stopTimer();
     elapsedBeforeStart = 0;
-    startedAt = Date.now();
-    gameFinished = false;
+    startedAt = gameState === GAME_STATES.running ? Date.now() : 0;
     renderTimer();
-    timerInterval = window.setInterval(renderTimer, 500);
+    if (gameState === GAME_STATES.running) {
+        timerInterval = window.setInterval(renderTimer, 500);
+    }
 }
 
 function updateStatsDisplay() {
@@ -190,6 +195,32 @@ function updateStatsDisplay() {
         Number.isFinite(stats.last) ? formatTime(stats.last) : "—";
     document.getElementById("bestTime").textContent =
         Number.isFinite(stats.best) ? formatTime(stats.best) : "—";
+}
+
+function setGameState(state) {
+    gameState = state;
+    updateGameStateDisplay();
+}
+
+function updateGameStateDisplay() {
+    const gameBoard = document.getElementById("gameBoard");
+    const isRunning = gameState === GAME_STATES.running;
+    const isPaused = gameState === GAME_STATES.paused;
+    const isFinished = gameState === GAME_STATES.finished;
+
+    gameBoard.classList.toggle("locked", !isRunning);
+    gameBoard.classList.toggle("paused", isPaused);
+    gameBoard.setAttribute("aria-hidden", isPaused ? "true" : "false");
+
+    gameBoard.querySelectorAll("input").forEach(input => {
+        input.disabled = !isRunning;
+    });
+
+    document.getElementById("startBtn").disabled = isRunning || isFinished;
+    document.getElementById("startBtn").textContent = isPaused ? "Continuar" : "Iniciar partida";
+    document.getElementById("pauseBtn").disabled = !isRunning;
+    document.getElementById("resetTimeBtn").disabled = isFinished;
+    document.getElementById("checkBtn").disabled = !isRunning;
 }
 
 function buildFixedCells() {
@@ -203,13 +234,18 @@ function buildFixedCells() {
 
 function startNewGame() {
     clearMessage();
+    stopTimer();
+    elapsedBeforeStart = 0;
+    startedAt = 0;
+    setGameState(GAME_STATES.ready);
     currentSolution = generateSolvedBoard();
     currentPuzzle = createPuzzle(currentSolution, DIFFICULTIES[currentDifficulty].clues);
     buildFixedCells();
     renderBoard();
     updateDifficultyLabel();
     updateStatsDisplay();
-    startTimer();
+    renderTimer();
+    updateGameStateDisplay();
 }
 
 function renderBoard() {
@@ -235,7 +271,7 @@ function renderBoard() {
                 input.setAttribute("aria-label", `Fila ${row + 1}, columna ${col + 1}`);
 
                 input.addEventListener("input", event => {
-                    if (gameFinished) return;
+                    if (gameState !== GAME_STATES.running) return;
                     event.target.value = event.target.value.replace(/[^1-9]/g, "").slice(0, 1);
                     validateCell(row, col);
                 });
@@ -310,7 +346,7 @@ function readUserBoard() {
 }
 
 function checkSolution() {
-    if (gameFinished) return;
+    if (gameState !== GAME_STATES.running) return;
     clearMessage();
     const userBoard = readUserBoard();
 
@@ -329,10 +365,10 @@ function checkSolution() {
     }
 
     const elapsed = getElapsedSeconds();
-    gameFinished = true;
     elapsedBeforeStart = elapsed;
     startedAt = 0;
     stopTimer();
+    setGameState(GAME_STATES.finished);
     renderTimer();
 
     const result = saveCompletedTime(elapsed);
@@ -350,11 +386,28 @@ function checkSolution() {
     showMessage(`🎉 ¡Sudoku resuelto en ${formatTime(elapsed)}!${comparison}${record}`, "success");
 }
 
-function resetGame() {
+function startGameClock() {
+    if (gameState !== GAME_STATES.ready && gameState !== GAME_STATES.paused) return;
     clearMessage();
-    renderBoard();
+    setGameState(GAME_STATES.running);
+    startTimer();
+}
+
+function pauseGame() {
+    if (gameState !== GAME_STATES.running) return;
+    elapsedBeforeStart = getElapsedSeconds();
+    startedAt = 0;
+    stopTimer();
+    setGameState(GAME_STATES.paused);
+    renderTimer();
+    showMessage("Partida pausada.", "info");
+}
+
+function resetTime() {
+    if (gameState === GAME_STATES.finished) return;
+    clearMessage();
     resetTimer();
-    showMessage("Partida reiniciada. El cronómetro volvió a cero.", "info");
+    showMessage("El cronómetro volvió a cero sin cambiar el tablero.", "info");
 }
 
 function changeDifficulty(difficulty) {
@@ -388,7 +441,9 @@ function initGame() {
         button.addEventListener("click", () => changeDifficulty(button.dataset.difficulty));
     });
     document.getElementById("newGameBtn").addEventListener("click", startNewGame);
-    document.getElementById("resetBtn").addEventListener("click", resetGame);
+    document.getElementById("startBtn").addEventListener("click", startGameClock);
+    document.getElementById("pauseBtn").addEventListener("click", pauseGame);
+    document.getElementById("resetTimeBtn").addEventListener("click", resetTime);
     document.getElementById("checkBtn").addEventListener("click", checkSolution);
     startNewGame();
 }
