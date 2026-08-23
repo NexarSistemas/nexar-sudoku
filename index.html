@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sudoku Nexar: jugá por niveles, medí tu tiempo y superá tus mejores marcas.">
+    <title>Sudoku Nexar | Nexar Play</title>
+    <link rel="stylesheet" href="sudoku.css">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="brand-header">
+            <a class="brand" href="https://nexarsistemas.com.ar/" aria-label="Ir a Nexar Sistemas">
+                <span class="brand-mark" aria-hidden="true">N</span>
+                <span>
+                    <strong>Nexar Play</strong>
+                    <small>Nexar Sistemas</small>
+                </span>
+            </a>
+            <span class="game-badge">Sudoku</span>
+        </header>
+
+        <section class="game-card">
+            <div class="title-block">
+                <p class="eyebrow">Entrená tu lógica</p>
+                <h1>Sudoku Nexar</h1>
+                <p>Completá el tablero con números del 1 al 9 sin repetir en filas, columnas ni bloques.</p>
+            </div>
+
+            <section class="stats-panel" aria-label="Estadísticas de partida">
+                <div class="stat">
+                    <span>Tiempo</span>
+                    <strong id="timer">00:00</strong>
+                </div>
+                <div class="stat">
+                    <span>Anterior</span>
+                    <strong id="previousTime">—</strong>
+                </div>
+                <div class="stat">
+                    <span>Mejor</span>
+                    <strong id="bestTime">—</strong>
+                </div>
+            </section>
+
+            <div class="difficulty-row">
+                <span id="difficultyLabel" class="difficulty-label">Dificultad: Fácil</span>
+                <div class="difficulty-controls" aria-label="Seleccionar dificultad">
+                    <button class="btn btn-difficulty active" data-difficulty="easy">Fácil</button>
+                    <button class="btn btn-difficulty" data-difficulty="medium">Medio</button>
+                    <button class="btn btn-difficulty" data-difficulty="hard">Difícil</button>
+                </div>
+            </div>
+
+            <div class="game-board" id="gameBoard" aria-label="Tablero de Sudoku"></div>
+
+            <div class="controls">
+                <button class="btn btn-secondary" id="resetBtn">Reiniciar</button>
+                <button class="btn btn-primary" id="checkBtn">Verificar</button>
+                <button class="btn btn-new" id="newGameBtn">Nuevo juego</button>
+            </div>
+
+            <div class="message" id="message" aria-live="polite"></div>
+        </section>
+
+        <footer>
+            <span>Un juego de <strong>Nexar Play</strong></span>
+            <a href="https://nexarsistemas.com.ar/">nexarsistemas.com.ar</a>
+        </footer>
+    </main>
+
+    <script src="sudoku.js"></script>
+</body>
+</html>
