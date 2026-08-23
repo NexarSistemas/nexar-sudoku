@@ -136,6 +136,7 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); }
 .controls { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .game-board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     width: min(100%, 486px);
@@ -145,6 +146,24 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); }
     background: #f8fafc;
     border-radius: 8px;
     overflow: hidden;
+}
+
+.game-board.paused::after {
+    content: "Partida pausada";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 28, 46, 0.96);
+    color: var(--text);
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: 900;
+    text-align: center;
+}
+
+.game-board.locked {
+    pointer-events: none;
 }
 
 .cell {
@@ -196,6 +215,12 @@ h1 { font-size: clamp(2rem, 6vw, 2.8rem); }
 }
 .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .btn:focus-visible { outline: 3px solid rgba(56, 189, 248, 0.38); outline-offset: 3px; }
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+    filter: none;
+}
 .btn-difficulty { background: #223249; color: #dce6f2; }
 .btn-difficulty.active { background: var(--accent-strong); color: white; }
 .btn-primary { background: var(--accent-strong); color: white; }
